@@ -1,5 +1,15 @@
 import streamlit as st
 import pandas as pd
+from difflib import SequenceMatcher
+def similar(a, b):
+    return SequenceMatcher(None, a.lower(), b.lower()).ratio()
+
+def exists_similar(word, word_list, threshold=0.75):
+    for w in word_list:
+        if similar(word, w) >= threshold:
+            return True
+    return False
+
 
 st.set_page_config(page_title="Domain ASR Error Detection", layout="wide")
 
@@ -26,13 +36,12 @@ if asr_file and corrected_file and domain_file:
         asr_text = str(asr_df.iloc[i, 0]).lower()
         corr_text = str(corr_df.iloc[i, 0]).lower()
 
-        for word in domain_words:
-            if word in corr_text and word not in asr_text:
-                errors.append({
-                    "Row": i + 1,
-                    "Missing Domain Word": word,
-                    "ASR Text": asr_text,
-                    "Corrected Text": corr_text
+       missing_domain_words = []
+
+for dword in domain_words:
+    if dword in corr_words and not exists_similar(dword, asr_words):
+        missing_domain_words.append(dword)
+
                 })
 
     if errors:
